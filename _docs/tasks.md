@@ -1,5 +1,11 @@
 # Shared Household Chore Manager --- Task Backlog
 
+> **Frozen snapshot.** As of 2026-09-14, GitHub Issues is the canonical,
+> active backlog for this project (see issues #4--#23, one per task below).
+> This document is kept only as historical context for how the backlog was
+> originally scoped and is not updated as tasks progress --- check GitHub
+> Issues for current status.
+
 This backlog breaks the MVP (see `_docs/plan.md` and `_docs/architecture.md`)
 into small, independent tasks. Each task is scoped to be finishable in a
 single session and described with enough context to hand to someone who

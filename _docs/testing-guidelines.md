@@ -1,0 +1,2 @@
+- Use pytest. 
+- Create test cases per task.  

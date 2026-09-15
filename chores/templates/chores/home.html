@@ -7,5 +7,9 @@
 <body>
   <h1>Family Chore Play</h1>
   <p>Placeholder home page -- the real dashboard lands in later tasks.</p>
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+  </form>
 </body>
 </html>

@@ -182,3 +182,37 @@ class Completion(models.Model):
             f'{self.family_member} completed {self.chore_instance} '
             f'(+{self.points_awarded})'
         )
+
+
+class StreakRecord(models.Model):
+    """A family member's current/best streak for one recurring ChoreDefinition.
+
+    One row per (family_member, chore_definition). Only recurring chores
+    (non-blank `recurrence_rule`) get a record -- see #19's
+    `chores/streaks.py` for where `current_streak`/`best_streak` are
+    updated (on completion and on missed-marking), so #20/#22 should read
+    the current value here rather than recomputing it.
+    """
+
+    family_member = models.ForeignKey(
+        FamilyMember, on_delete=models.CASCADE, related_name='streak_records'
+    )
+    chore_definition = models.ForeignKey(
+        ChoreDefinition, on_delete=models.CASCADE, related_name='streak_records'
+    )
+    current_streak = models.PositiveIntegerField(default=0)
+    best_streak = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['family_member', 'chore_definition'],
+                name='unique_streak_record_per_member_per_definition',
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.family_member} / {self.chore_definition}: '
+            f'{self.current_streak} (best {self.best_streak})'
+        )

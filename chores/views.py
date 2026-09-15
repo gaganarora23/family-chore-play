@@ -4,6 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from . import streaks
 from .decorators import parent_required
 from .forms import ChoreDefinitionForm
 from .models import ChoreDefinition, ChoreInstance, Completion, FamilyMember
@@ -84,6 +85,7 @@ def mark_chore_done(request, pk):
                 family_member=family_member,
                 points_awarded=instance.chore_definition.points,
             )
+            streaks.record_completion(family_member, instance.chore_definition)
         elif (
             actionable
             and verification_mode == ChoreDefinition.VerificationMode.APPROVAL
@@ -158,6 +160,7 @@ def approve_completion(request, pk):
                 family_member=instance.claimed_by,
                 points_awarded=instance.chore_definition.points,
             )
+            streaks.record_completion(instance.claimed_by, instance.chore_definition)
     return render(
         request,
         'chores/_chore_row.html',

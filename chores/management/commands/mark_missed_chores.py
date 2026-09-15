@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 
+from chores import streaks
 from chores.dates import household_today
 from chores.models import ChoreInstance, Household
 
@@ -21,9 +22,17 @@ class Command(BaseCommand):
         missed_count = 0
         for household in Household.objects.all():
             today = household_today(household)
-            missed_count += ChoreInstance.objects.filter(
+            instances = ChoreInstance.objects.filter(
                 chore_definition__household=household,
                 date__lt=today,
                 status__in=INCOMPLETE_STATUSES,
-            ).update(status=ChoreInstance.Status.MISSED)
+            ).select_related('chore_definition', 'claimed_by')
+            for instance in instances:
+                instance.status = ChoreInstance.Status.MISSED
+                instance.save(update_fields=['status'])
+                if instance.claimed_by_id is not None:
+                    streaks.reset_on_miss(
+                        instance.claimed_by, instance.chore_definition
+                    )
+                missed_count += 1
         self.stdout.write(f'Marked {missed_count} chore instance(s) missed.')

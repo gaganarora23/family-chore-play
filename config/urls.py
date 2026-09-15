@@ -32,4 +32,9 @@ urlpatterns = [
     path(
         'instances/<int:pk>/claim/', chores_views.claim_chore, name='claim_chore'
     ),
+    path(
+        'instances/<int:pk>/done/',
+        chores_views.mark_chore_done,
+        name='mark_chore_done',
+    ),
 ]

@@ -159,3 +159,26 @@ class ChoreInstance(models.Model):
 
     def __str__(self):
         return f'{self.chore_definition} on {self.date} ({self.status})'
+
+
+class Completion(models.Model):
+    """Records who completed a ChoreInstance, when, and the points awarded.
+
+    Per-member point totals (#20) are computed by summing
+    `Completion.points_awarded`, not stored redundantly on FamilyMember.
+    """
+
+    chore_instance = models.ForeignKey(
+        ChoreInstance, on_delete=models.CASCADE, related_name='completions'
+    )
+    family_member = models.ForeignKey(
+        FamilyMember, on_delete=models.CASCADE, related_name='completions'
+    )
+    completed_at = models.DateTimeField(auto_now_add=True)
+    points_awarded = models.PositiveIntegerField()
+
+    def __str__(self):
+        return (
+            f'{self.family_member} completed {self.chore_instance} '
+            f'(+{self.points_awarded})'
+        )

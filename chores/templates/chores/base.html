@@ -1,0 +1,36 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Family Chore Play{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'chores/style.css' %}">
+  {% if user.is_authenticated %}
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  {% endif %}
+</head>
+<body>
+  {% if user.is_authenticated %}
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="{% url 'home' %}">🌿 Family Chore Play</a>
+        <nav class="main-nav">
+          <a href="{% url 'home' %}">Dashboard</a>
+          {% if current_family_member.role == 'parent' %}
+            <a href="{% url 'chore_list' %}">Chores</a>
+            <a href="{% url 'approval_queue' %}">Approvals</a>
+            <a href="{% url 'reward_list' %}">Rewards</a>
+          {% endif %}
+        </nav>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost">Log out</button>
+        </form>
+      </div>
+    </header>
+  {% endif %}
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

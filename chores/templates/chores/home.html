@@ -1,66 +1,66 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Family Chore Play</title>
-</head>
-<body>
-  <h1>Family Chore Play</h1>
+{% extends "chores/base.html" %}
 
+{% block title %}Dashboard -- Family Chore Play{% endblock %}
+
+{% block content %}
   <h2>Today</h2>
   {% if today_chores %}
-    <ul>
+    <ul class="chore-list">
       {% for instance in today_chores %}
         {% include "chores/_chore_row.html" %}
       {% endfor %}
     </ul>
   {% else %}
-    <p>No chores today.</p>
+    <p class="empty-state">No chores today.</p>
   {% endif %}
 
   <h2>Available to Claim</h2>
   {% if available_chores %}
-    <ul>
+    <ul class="chore-list">
       {% for instance in available_chores %}
         {% include "chores/_chore_row.html" %}
       {% endfor %}
     </ul>
   {% else %}
-    <p>Nothing available to claim.</p>
+    <p class="empty-state">Nothing available to claim.</p>
   {% endif %}
 
   <h2>Points</h2>
   {% if points_summary %}
-    <ul>
+    <div class="card">
       {% for item in points_summary %}
-        <li>{{ item.member }}: {{ item.total_points }} points</li>
+        <div class="reward-row">
+          <span>{{ item.member.user.get_username }}</span>
+          <strong>{{ item.total_points }} points</strong>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% endif %}
 
   <h2>Rewards</h2>
   {% if reward_progress %}
-    <ul>
+    <div class="card">
       {% for item in reward_progress %}
-        <li>
-          {{ item.reward.name }}
-          {% if item.points_progress %}
-            -- {{ item.points_progress.0 }} / {{ item.points_progress.1 }} points
-          {% endif %}
-          {% if item.streak_progress %}
-            -- {{ item.streak_progress.0 }} / {{ item.streak_progress.1 }} streak
-          {% endif %}
-          {% if item.unlocked %}✓ Unlocked{% endif %}
-        </li>
+        <div class="reward-row">
+          <div>
+            <div>
+              {{ item.reward.name }}
+              {% if item.unlocked %}<span class="badge badge-completed">✓ Unlocked</span>{% endif %}
+            </div>
+            <div class="reward-row__meta">
+              {% if item.points_progress %}
+                {{ item.points_progress.0 }} / {{ item.points_progress.1 }} points
+              {% endif %}
+              {% if item.streak_progress %}
+                {% if item.points_progress %}&middot;{% endif %}
+                {{ item.streak_progress.0 }} / {{ item.streak_progress.1 }} streak
+              {% endif %}
+            </div>
+          </div>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
-    <p>No rewards yet.</p>
+    <p class="empty-state">No rewards yet.</p>
   {% endif %}
-
-  <form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">Log out</button>
-  </form>
-</body>
-</html>
+{% endblock %}

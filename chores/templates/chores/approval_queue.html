@@ -1,38 +1,36 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Approvals -- Family Chore Play</title>
-</head>
-<body>
+{% extends "chores/base.html" %}
+
+{% block title %}Approvals -- Family Chore Play{% endblock %}
+
+{% block content %}
   <h1>Approvals</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Family Member</th>
-        <th>Chore</th>
-        <th>Points</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for instance in instances %}
+  <div class="table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td>{{ instance.claimed_by }}</td>
-          <td>{{ instance.chore_definition.name }}</td>
-          <td>+{{ instance.chore_definition.points }}</td>
-          <td>
-            <form method="post" action="{% url 'approve_completion' instance.pk %}">
-              {% csrf_token %}
-              <button type="submit">Approve</button>
-            </form>
-          </td>
+          <th>Family Member</th>
+          <th>Chore</th>
+          <th>Points</th>
+          <th></th>
         </tr>
-      {% empty %}
-        <tr><td colspan="4">Nothing waiting for approval.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</body>
-</html>
+      </thead>
+      <tbody>
+        {% for instance in instances %}
+          <tr>
+            <td>{{ instance.claimed_by.user.get_username }}</td>
+            <td>{{ instance.chore_definition.name }}</td>
+            <td>+{{ instance.chore_definition.points }}</td>
+            <td>
+              <form method="post" action="{% url 'approve_completion' instance.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="empty-state">Nothing waiting for approval.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

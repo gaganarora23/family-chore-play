@@ -1,5 +1,33 @@
-<li>
-  {{ instance.chore_definition.name }} -- +{{ instance.chore_definition.points }} points
-  ({{ instance.get_status_display }})
-  {% if instance.current_streak %}🔥 +{{ instance.current_streak }}{% endif %}
+<li id="chore-row-{{ instance.pk }}" class="chore-row"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="chore-row__info">
+    <span class="chore-row__name">{{ instance.chore_definition.name }}</span>
+    <span class="chore-row__points">+{{ instance.chore_definition.points }} points</span>
+    {% if instance.current_streak %}
+      <span class="streak-badge">🔥 +{{ instance.current_streak }}</span>
+    {% endif %}
+  </div>
+  <div class="chore-row__action">
+    {% if instance.status == 'available' and not instance.claimed_by_id %}
+      <button type="button" class="btn btn-sm btn-primary"
+              hx-post="{% url 'claim_chore' instance.pk %}"
+              hx-target="#chore-row-{{ instance.pk }}"
+              hx-swap="outerHTML">
+        Claim
+      </button>
+    {% elif instance.status == 'available' or instance.status == 'claimed' %}
+      <button type="button" class="btn btn-sm btn-primary"
+              hx-post="{% url 'mark_chore_done' instance.pk %}"
+              hx-target="#chore-row-{{ instance.pk }}"
+              hx-swap="outerHTML">
+        Mark Done
+      </button>
+    {% elif instance.status == 'pending_approval' %}
+      <span class="badge badge-pending">Waiting for approval</span>
+    {% elif instance.status == 'completed' %}
+      <span class="badge badge-completed">✓ Done</span>
+    {% elif instance.status == 'missed' %}
+      <span class="badge badge-muted">Missed</span>
+    {% endif %}
+  </div>
 </li>

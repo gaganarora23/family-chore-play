@@ -1,32 +1,30 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rewards -- Family Chore Play</title>
-</head>
-<body>
+{% extends "chores/base.html" %}
+
+{% block title %}Rewards -- Family Chore Play{% endblock %}
+
+{% block content %}
   <h1>Rewards</h1>
-  <p><a href="{% url 'reward_create' %}">Create a reward</a></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Points needed</th>
-        <th>Streak needed</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for reward in rewards %}
+  <p><a href="{% url 'reward_create' %}" class="btn btn-primary">+ Create a reward</a></p>
+  <div class="table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td>{{ reward.name }}</td>
-          <td>{{ reward.point_threshold|default:"--" }}</td>
-          <td>{{ reward.streak_threshold|default:"--" }}</td>
+          <th>Name</th>
+          <th>Points needed</th>
+          <th>Streak needed</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="3">No rewards yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</body>
-</html>
+      </thead>
+      <tbody>
+        {% for reward in rewards %}
+          <tr>
+            <td>{{ reward.name }}</td>
+            <td>{{ reward.point_threshold|default:"--" }}</td>
+            <td>{{ reward.streak_threshold|default:"--" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="empty-state">No rewards yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

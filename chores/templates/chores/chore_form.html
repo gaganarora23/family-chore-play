@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>New Chore -- Family Chore Play</title>
+  <title>{% if chore %}Edit Chore{% else %}New Chore{% endif %} -- Family Chore Play</title>
 </head>
 <body>
-  <h1>Create a Chore</h1>
+  <h1>{% if chore %}Edit Chore{% else %}Create a Chore{% endif %}</h1>
   {% if form.non_field_errors %}
     <ul>
       {% for error in form.non_field_errors %}
@@ -17,7 +17,7 @@
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Create Chore</button>
+    <button type="submit">{% if chore %}Save Changes{% else %}Create Chore{% endif %}</button>
   </form>
 </body>
 </html>

@@ -35,4 +35,6 @@ urlpatterns = [
         chores_views.chore_create_success,
         name='chore_create_success',
     ),
+    path('chores/', chores_views.chore_list, name='chore_list'),
+    path('chores/<int:pk>/edit/', chores_views.chore_edit, name='chore_edit'),
 ]

@@ -29,6 +29,15 @@
     <p>Nothing available to claim.</p>
   {% endif %}
 
+  <h2>Points</h2>
+  {% if points_summary %}
+    <ul>
+      {% for item in points_summary %}
+        <li>{{ item.member }}: {{ item.total_points }} points</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
   <h2>Rewards</h2>
   {% if reward_progress %}
     <ul>

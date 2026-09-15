@@ -11,14 +11,22 @@
   {% if today_chores %}
     <ul>
       {% for instance in today_chores %}
-        <li>
-          {{ instance.chore_definition.name }} -- +{{ instance.chore_definition.points }} points
-          ({{ instance.get_status_display }})
-        </li>
+        {% include "chores/_chore_row.html" %}
       {% endfor %}
     </ul>
   {% else %}
     <p>No chores today.</p>
+  {% endif %}
+
+  <h2>Available to Claim</h2>
+  {% if available_chores %}
+    <ul>
+      {% for instance in available_chores %}
+        {% include "chores/_chore_row.html" %}
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nothing available to claim.</p>
   {% endif %}
 
   <form method="post" action="{% url 'logout' %}">

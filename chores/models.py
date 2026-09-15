@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -50,3 +51,64 @@ class FamilyMember(models.Model):
                 f'members; removing {self} would leave {remaining}.'
             )
         return super().delete(*args, **kwargs)
+
+
+class ChoreDefinition(models.Model):
+    """The reusable template for a chore: name, points, and how it works.
+
+    Kept separate from `ChoreInstance` (a specific day's occurrence) --
+    see `_docs/architecture.md` §4.
+    """
+
+    class OwnershipType(models.TextChoices):
+        ASSIGNED = 'assigned', 'Assigned'
+        CLAIMABLE = 'claimable', 'Claimable'
+
+    class VerificationMode(models.TextChoices):
+        INSTANT = 'instant', 'Instant'
+        APPROVAL = 'approval', 'Approval'
+
+    household = models.ForeignKey(
+        Household, on_delete=models.CASCADE, related_name='chore_definitions'
+    )
+    name = models.CharField(max_length=255)
+    points = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    ownership_type = models.CharField(
+        max_length=20, choices=OwnershipType.choices
+    )
+    assigned_member = models.ForeignKey(
+        FamilyMember,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='assigned_chore_definitions',
+    )
+    recurrence_rule = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="e.g. 'daily', 'weekly:tuesday'. Blank means one-off.",
+    )
+    verification_mode = models.CharField(
+        max_length=20, choices=VerificationMode.choices
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        if (
+            self.ownership_type == self.OwnershipType.ASSIGNED
+            and self.assigned_member_id is None
+        ):
+            raise ValidationError(
+                'An assigned chore must have an assigned_member.'
+            )
+        if (
+            self.ownership_type == self.OwnershipType.CLAIMABLE
+            and self.assigned_member_id is not None
+        ):
+            raise ValidationError(
+                'A claimable chore must not have an assigned_member.'
+            )

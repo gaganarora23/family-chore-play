@@ -6,7 +6,21 @@
 </head>
 <body>
   <h1>Family Chore Play</h1>
-  <p>Placeholder home page -- the real dashboard lands in later tasks.</p>
+
+  <h2>Today</h2>
+  {% if today_chores %}
+    <ul>
+      {% for instance in today_chores %}
+        <li>
+          {{ instance.chore_definition.name }} -- +{{ instance.chore_definition.points }} points
+          ({{ instance.get_status_display }})
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No chores today.</p>
+  {% endif %}
+
   <form method="post" action="{% url 'logout' %}">
     {% csrf_token %}
     <button type="submit">Log out</button>

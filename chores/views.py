@@ -4,7 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from . import streaks
+from . import rewards, streaks
 from .dates import household_today
 from .decorators import parent_required
 from .forms import ChoreDefinitionForm, RewardForm
@@ -59,10 +59,15 @@ def home(request):
         instance.current_streak = streak_by_definition_id.get(
             instance.chore_definition_id
         )
+    reward_progress = rewards.reward_progress_for(family_member)
     return render(
         request,
         'chores/home.html',
-        {'today_chores': today_chores, 'available_chores': available_chores},
+        {
+            'today_chores': today_chores,
+            'available_chores': available_chores,
+            'reward_progress': reward_progress,
+        },
     )
 
 

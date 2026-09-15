@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Max, Sum
 
 
 class Household(models.Model):
@@ -51,6 +52,27 @@ class FamilyMember(models.Model):
                 f'members; removing {self} would leave {remaining}.'
             )
         return super().delete(*args, **kwargs)
+
+    def total_points(self):
+        """Sum of `Completion.points_awarded` earned by this member.
+
+        The single source of truth for a member's point total -- #22
+        (reward progress) and #23 (points summary) both read this rather
+        than recomputing it differently.
+        """
+        return self.completions.aggregate(total=Sum('points_awarded'))['total'] or 0
+
+    def best_current_streak(self):
+        """Highest `current_streak` across this member's `StreakRecord`s.
+
+        `Reward` (#21) isn't tied to a specific `ChoreDefinition`, so #22
+        uses this -- the member's single best active streak, on whichever
+        chore it's on -- as "their streak" toward a reward's
+        `streak_threshold`.
+        """
+        return (
+            self.streak_records.aggregate(best=Max('current_streak'))['best'] or 0
+        )
 
 
 class ChoreDefinition(models.Model):

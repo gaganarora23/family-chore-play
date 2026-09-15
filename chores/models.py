@@ -112,3 +112,50 @@ class ChoreDefinition(models.Model):
             raise ValidationError(
                 'A claimable chore must not have an assigned_member.'
             )
+
+
+class ChoreInstance(models.Model):
+    """One day's actual occurrence of a `ChoreDefinition`.
+
+    This is the row that claiming, completion, and approval (#9-#13)
+    operate on -- not the definition itself.
+
+    `claimed_by` is the single source of truth for whose chore this
+    instance is: for an *assigned* `chore_definition` it is set to the
+    definition's `assigned_member` at creation time (creation is #17's
+    responsibility, out of scope here); for a *claimable* one it starts
+    `None` and is only set once a family member claims it (#13).
+    """
+
+    class Status(models.TextChoices):
+        AVAILABLE = 'available', 'Available'
+        CLAIMED = 'claimed', 'Claimed'
+        PENDING_APPROVAL = 'pending_approval', 'Pending approval'
+        COMPLETED = 'completed', 'Completed'
+        MISSED = 'missed', 'Missed'
+
+    chore_definition = models.ForeignKey(
+        ChoreDefinition, on_delete=models.CASCADE, related_name='instances'
+    )
+    date = models.DateField()
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.AVAILABLE
+    )
+    claimed_by = models.ForeignKey(
+        FamilyMember,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='claimed_chore_instances',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chore_definition', 'date'],
+                name='unique_chore_instance_per_definition_per_day',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.chore_definition} on {self.date} ({self.status})'

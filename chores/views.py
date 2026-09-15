@@ -1,9 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from .decorators import parent_required
+from .forms import ChoreDefinitionForm
 from .models import ChoreDefinition, ChoreInstance, Completion, FamilyMember
 
 
@@ -93,4 +95,72 @@ def mark_chore_done(request, pk):
         'chores/_chore_row.html',
         {'instance': instance},
         status=200 if actionable else 409,
+    )
+
+
+@parent_required
+def chore_create(request):
+    """Let a parent create a ChoreDefinition for their own household."""
+    household = request.family_member.household
+    if request.method == 'POST':
+        form = ChoreDefinitionForm(request.POST, household=household)
+        if form.is_valid():
+            form.save()
+            return redirect('chore_create_success')
+    else:
+        form = ChoreDefinitionForm(household=household)
+    return render(request, 'chores/chore_form.html', {'form': form})
+
+
+@parent_required
+def chore_create_success(request):
+    """Confirmation page after creating a chore.
+
+    A real listing view lands in #10; this is the minimal "confirmation
+    or listing page" the issue's acceptance criteria call for.
+    """
+    return render(request, 'chores/chore_create_success.html')
+
+
+@parent_required
+def approval_queue(request):
+    """List every ChoreInstance pending approval in the parent's household."""
+    instances = ChoreInstance.objects.filter(
+        chore_definition__household=request.family_member.household,
+        status=ChoreInstance.Status.PENDING_APPROVAL,
+    ).select_related('chore_definition', 'claimed_by__user')
+    return render(request, 'chores/approval_queue.html', {'instances': instances})
+
+
+@parent_required
+@require_POST
+def approve_completion(request, pk):
+    """Approve a pending_approval ChoreInstance: complete it, record the
+    Completion, and award points to claimed_by.
+
+    Scoped to the parent's own household (404 otherwise) and re-checked
+    inside a locked transaction, same idempotency pattern as #14/#15, so
+    approving twice can't double-award.
+    """
+    instance = get_object_or_404(
+        ChoreInstance,
+        pk=pk,
+        chore_definition__household=request.family_member.household,
+    )
+    with transaction.atomic():
+        instance = ChoreInstance.objects.select_for_update().get(pk=instance.pk)
+        approvable = instance.status == ChoreInstance.Status.PENDING_APPROVAL
+        if approvable:
+            instance.status = ChoreInstance.Status.COMPLETED
+            instance.save(update_fields=['status'])
+            Completion.objects.create(
+                chore_instance=instance,
+                family_member=instance.claimed_by,
+                points_awarded=instance.chore_definition.points,
+            )
+    return render(
+        request,
+        'chores/_chore_row.html',
+        {'instance': instance},
+        status=200 if approvable else 409,
     )

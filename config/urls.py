@@ -37,4 +37,16 @@ urlpatterns = [
         chores_views.mark_chore_done,
         name='mark_chore_done',
     ),
+    path('chores/new/', chores_views.chore_create, name='chore_create'),
+    path(
+        'chores/new/success/',
+        chores_views.chore_create_success,
+        name='chore_create_success',
+    ),
+    path('approvals/', chores_views.approval_queue, name='approval_queue'),
+    path(
+        'instances/<int:pk>/approve/',
+        chores_views.approve_completion,
+        name='approve_completion',
+    ),
 ]

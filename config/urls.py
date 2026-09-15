@@ -51,4 +51,6 @@ urlpatterns = [
     ),
     path('rewards/', chores_views.reward_list, name='reward_list'),
     path('rewards/new/', chores_views.reward_create, name='reward_create'),
+    path('chores/', chores_views.chore_list, name='chore_list'),
+    path('chores/<int:pk>/edit/', chores_views.chore_edit, name='chore_edit'),
 ]

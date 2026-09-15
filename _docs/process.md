@@ -10,3 +10,7 @@
 - Open a PR per issue against `main`; merging the PR is what closes the
   loop on that task. Don't batch multiple issues into one PR unless
   they're trivially small and closely related.
+
+  Roles
+
+- PM - grooms a task before anyone implements it, follows _docs/team/pm.md

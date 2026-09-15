@@ -29,4 +29,10 @@ urlpatterns = [
         name='login',
     ),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('chores/new/', chores_views.chore_create, name='chore_create'),
+    path(
+        'chores/new/success/',
+        chores_views.chore_create_success,
+        name='chore_create_success',
+    ),
 ]

@@ -216,3 +216,31 @@ class StreakRecord(models.Model):
             f'{self.family_member} / {self.chore_definition}: '
             f'{self.current_streak} (best {self.best_streak})'
         )
+
+
+class Reward(models.Model):
+    """A household reward, unlocked by a points and/or streak threshold.
+
+    At least one of `point_threshold`/`streak_threshold` must be set --
+    enforced in `clean()` since neither field alone can express "at least
+    one of these two".
+    """
+
+    household = models.ForeignKey(
+        Household, on_delete=models.CASCADE, related_name='rewards'
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    point_threshold = models.PositiveIntegerField(null=True, blank=True)
+    streak_threshold = models.PositiveIntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        if self.point_threshold is None and self.streak_threshold is None:
+            raise ValidationError(
+                'A reward needs at least a point_threshold or a '
+                'streak_threshold.'
+            )

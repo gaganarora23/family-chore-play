@@ -49,4 +49,6 @@ urlpatterns = [
         chores_views.approve_completion,
         name='approve_completion',
     ),
+    path('rewards/', chores_views.reward_list, name='reward_list'),
+    path('rewards/new/', chores_views.reward_create, name='reward_create'),
 ]

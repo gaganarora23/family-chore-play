@@ -7,8 +7,15 @@ from django.views.decorators.http import require_POST
 from . import streaks
 from .dates import household_today
 from .decorators import parent_required
-from .forms import ChoreDefinitionForm
-from .models import ChoreDefinition, ChoreInstance, Completion, FamilyMember, StreakRecord
+from .forms import ChoreDefinitionForm, RewardForm
+from .models import (
+    ChoreDefinition,
+    ChoreInstance,
+    Completion,
+    FamilyMember,
+    Reward,
+    StreakRecord,
+)
 
 
 @login_required
@@ -205,3 +212,24 @@ def approve_completion(request, pk):
         {'instance': instance},
         status=200 if approvable else 409,
     )
+
+
+@parent_required
+def reward_list(request):
+    """List every Reward belonging to the logged-in parent's household."""
+    rewards = Reward.objects.filter(household=request.family_member.household)
+    return render(request, 'chores/reward_list.html', {'rewards': rewards})
+
+
+@parent_required
+def reward_create(request):
+    """Let a parent create a Reward for their own household."""
+    household = request.family_member.household
+    if request.method == 'POST':
+        form = RewardForm(request.POST, household=household)
+        if form.is_valid():
+            form.save()
+            return redirect('reward_list')
+    else:
+        form = RewardForm(household=household)
+    return render(request, 'chores/reward_form.html', {'form': form})

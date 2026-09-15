@@ -60,6 +60,12 @@ def home(request):
             instance.chore_definition_id
         )
     reward_progress = rewards.reward_progress_for(family_member)
+    points_summary = [
+        {'member': household_member, 'total_points': household_member.total_points()}
+        for household_member in FamilyMember.objects.filter(
+            household=family_member.household
+        ).select_related('user')
+    ]
     return render(
         request,
         'chores/home.html',
@@ -67,6 +73,7 @@ def home(request):
             'today_chores': today_chores,
             'available_chores': available_chores,
             'reward_progress': reward_progress,
+            'points_summary': points_summary,
         },
     )
 

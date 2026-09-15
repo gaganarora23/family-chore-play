@@ -58,3 +58,47 @@ def test_household_timezone_defaults_to_utc():
     household = Household.objects.create(name='The Smiths')
 
     assert household.timezone == 'UTC'
+
+
+@pytest.mark.django_db
+def test_removing_a_member_that_would_drop_household_below_minimum_is_rejected():
+    household = Household.objects.create(name='The Smiths')
+    parent = FamilyMember.objects.create(
+        user=User.objects.create_user(username='parent'),
+        household=household,
+        role=FamilyMember.Role.PARENT,
+    )
+    kid = FamilyMember.objects.create(
+        user=User.objects.create_user(username='kid'),
+        household=household,
+        role=FamilyMember.Role.FAMILY_MEMBER,
+    )
+
+    with pytest.raises(ValidationError):
+        kid.delete()
+
+    assert set(household.members.all()) == {parent, kid}
+
+
+@pytest.mark.django_db
+def test_removing_a_member_is_allowed_when_household_stays_at_or_above_minimum():
+    household = Household.objects.create(name='The Smiths')
+    parent = FamilyMember.objects.create(
+        user=User.objects.create_user(username='parent'),
+        household=household,
+        role=FamilyMember.Role.PARENT,
+    )
+    kid = FamilyMember.objects.create(
+        user=User.objects.create_user(username='kid'),
+        household=household,
+        role=FamilyMember.Role.FAMILY_MEMBER,
+    )
+    guest = FamilyMember.objects.create(
+        user=User.objects.create_user(username='guest'),
+        household=household,
+        role=FamilyMember.Role.FAMILY_MEMBER,
+    )
+
+    guest.delete()
+
+    assert set(household.members.all()) == {parent, kid}

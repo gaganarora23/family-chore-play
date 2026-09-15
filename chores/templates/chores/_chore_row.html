@@ -1,4 +1,5 @@
 <li>
   {{ instance.chore_definition.name }} -- +{{ instance.chore_definition.points }} points
   ({{ instance.get_status_display }})
+  {% if instance.current_streak %}🔥 +{{ instance.current_streak }}{% endif %}
 </li>

@@ -5,20 +5,58 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from . import streaks
+from .dates import household_today
 from .decorators import parent_required
 from .forms import ChoreDefinitionForm
-from .models import ChoreDefinition, ChoreInstance, Completion, FamilyMember
+from .models import ChoreDefinition, ChoreInstance, Completion, FamilyMember, StreakRecord
 
 
 @login_required
 def home(request):
-    """Placeholder home page.
+    """Dashboard: today's chores that are the logged-in family member's own,
+    plus the household's unclaimed claimable pool.
 
-    Real dashboard content (today's chores, available chores, points,
-    rewards) lands in later tasks -- see `_docs/tasks.md` #8-9 and
-    `_docs/plan.md` #5.
+    "Theirs" means assigned to them or claimed by them (`claimed_by` is
+    the source of truth -- see `ChoreInstance`), and still relevant today
+    (`available`, `claimed`, or `pending_approval`). The available pool is
+    every other today's instance that's still `available` and unclaimed
+    (`claimed_by=None`) -- an assigned chore's instance, even though it's
+    also `available`, has `claimed_by` already set and so belongs on the
+    member's own list instead.
     """
-    return render(request, "chores/home.html")
+    family_member = get_object_or_404(FamilyMember, user=request.user)
+    today = household_today(family_member.household)
+    today_chores = list(
+        ChoreInstance.objects.filter(
+            claimed_by=family_member,
+            date=today,
+            status__in=[
+                ChoreInstance.Status.AVAILABLE,
+                ChoreInstance.Status.CLAIMED,
+                ChoreInstance.Status.PENDING_APPROVAL,
+            ],
+        ).select_related('chore_definition')
+    )
+    available_chores = ChoreInstance.objects.filter(
+        chore_definition__household=family_member.household,
+        date=today,
+        status=ChoreInstance.Status.AVAILABLE,
+        claimed_by__isnull=True,
+    ).select_related('chore_definition')
+    streak_by_definition_id = dict(
+        StreakRecord.objects.filter(
+            family_member=family_member, current_streak__gt=0
+        ).values_list('chore_definition_id', 'current_streak')
+    )
+    for instance in today_chores:
+        instance.current_streak = streak_by_definition_id.get(
+            instance.chore_definition_id
+        )
+    return render(
+        request,
+        'chores/home.html',
+        {'today_chores': today_chores, 'available_chores': available_chores},
+    )
 
 
 @login_required

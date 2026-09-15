@@ -29,4 +29,7 @@ urlpatterns = [
         name='login',
     ),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path(
+        'instances/<int:pk>/claim/', chores_views.claim_chore, name='claim_chore'
+    ),
 ]

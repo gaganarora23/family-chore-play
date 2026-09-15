@@ -1,5 +1,9 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.db import transaction
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_POST
+
+from .models import ChoreInstance, FamilyMember
 
 
 @login_required
@@ -11,3 +15,36 @@ def home(request):
     `_docs/plan.md` #5.
     """
     return render(request, "chores/home.html")
+
+
+@login_required
+@require_POST
+def claim_chore(request, pk):
+    """Let a family member claim an available, unclaimed ChoreInstance.
+
+    Re-checks status/claimed_by inside a locked transaction so two
+    simultaneous claims on the same instance can't both succeed -- the
+    client's last-rendered state is never trusted. An assigned chore's
+    instance already has claimed_by set at creation (#8), so it's
+    rejected here the same as an already-claimed one.
+    """
+    family_member = get_object_or_404(FamilyMember, user=request.user)
+    instance = get_object_or_404(
+        ChoreInstance, pk=pk, chore_definition__household=family_member.household
+    )
+    with transaction.atomic():
+        instance = ChoreInstance.objects.select_for_update().get(pk=instance.pk)
+        claimable = (
+            instance.status == ChoreInstance.Status.AVAILABLE
+            and instance.claimed_by_id is None
+        )
+        if claimable:
+            instance.status = ChoreInstance.Status.CLAIMED
+            instance.claimed_by = family_member
+            instance.save(update_fields=['status', 'claimed_by'])
+    return render(
+        request,
+        'chores/_chore_row.html',
+        {'instance': instance},
+        status=200 if claimable else 409,
+    )

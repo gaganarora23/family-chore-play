@@ -29,4 +29,28 @@ urlpatterns = [
         name='login',
     ),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path(
+        'instances/<int:pk>/claim/', chores_views.claim_chore, name='claim_chore'
+    ),
+    path(
+        'instances/<int:pk>/done/',
+        chores_views.mark_chore_done,
+        name='mark_chore_done',
+    ),
+    path('chores/new/', chores_views.chore_create, name='chore_create'),
+    path(
+        'chores/new/success/',
+        chores_views.chore_create_success,
+        name='chore_create_success',
+    ),
+    path('approvals/', chores_views.approval_queue, name='approval_queue'),
+    path(
+        'instances/<int:pk>/approve/',
+        chores_views.approve_completion,
+        name='approve_completion',
+    ),
+    path('rewards/', chores_views.reward_list, name='reward_list'),
+    path('rewards/new/', chores_views.reward_create, name='reward_create'),
+    path('chores/', chores_views.chore_list, name='chore_list'),
+    path('chores/<int:pk>/edit/', chores_views.chore_edit, name='chore_edit'),
 ]

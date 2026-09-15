@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Max, Sum
 
 
 class Household(models.Model):
@@ -51,6 +52,27 @@ class FamilyMember(models.Model):
                 f'members; removing {self} would leave {remaining}.'
             )
         return super().delete(*args, **kwargs)
+
+    def total_points(self):
+        """Sum of `Completion.points_awarded` earned by this member.
+
+        The single source of truth for a member's point total -- #22
+        (reward progress) and #23 (points summary) both read this rather
+        than recomputing it differently.
+        """
+        return self.completions.aggregate(total=Sum('points_awarded'))['total'] or 0
+
+    def best_current_streak(self):
+        """Highest `current_streak` across this member's `StreakRecord`s.
+
+        `Reward` (#21) isn't tied to a specific `ChoreDefinition`, so #22
+        uses this -- the member's single best active streak, on whichever
+        chore it's on -- as "their streak" toward a reward's
+        `streak_threshold`.
+        """
+        return (
+            self.streak_records.aggregate(best=Max('current_streak'))['best'] or 0
+        )
 
 
 class ChoreDefinition(models.Model):
@@ -111,4 +133,136 @@ class ChoreDefinition(models.Model):
         ):
             raise ValidationError(
                 'A claimable chore must not have an assigned_member.'
+            )
+
+
+class ChoreInstance(models.Model):
+    """One day's actual occurrence of a `ChoreDefinition`.
+
+    This is the row that claiming, completion, and approval (#9-#13)
+    operate on -- not the definition itself.
+
+    `claimed_by` is the single source of truth for whose chore this
+    instance is: for an *assigned* `chore_definition` it is set to the
+    definition's `assigned_member` at creation time (creation is #17's
+    responsibility, out of scope here); for a *claimable* one it starts
+    `None` and is only set once a family member claims it (#13).
+    """
+
+    class Status(models.TextChoices):
+        AVAILABLE = 'available', 'Available'
+        CLAIMED = 'claimed', 'Claimed'
+        PENDING_APPROVAL = 'pending_approval', 'Pending approval'
+        COMPLETED = 'completed', 'Completed'
+        MISSED = 'missed', 'Missed'
+
+    chore_definition = models.ForeignKey(
+        ChoreDefinition, on_delete=models.CASCADE, related_name='instances'
+    )
+    date = models.DateField()
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.AVAILABLE
+    )
+    claimed_by = models.ForeignKey(
+        FamilyMember,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='claimed_chore_instances',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chore_definition', 'date'],
+                name='unique_chore_instance_per_definition_per_day',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.chore_definition} on {self.date} ({self.status})'
+
+
+class Completion(models.Model):
+    """Records who completed a ChoreInstance, when, and the points awarded.
+
+    Per-member point totals (#20) are computed by summing
+    `Completion.points_awarded`, not stored redundantly on FamilyMember.
+    """
+
+    chore_instance = models.ForeignKey(
+        ChoreInstance, on_delete=models.CASCADE, related_name='completions'
+    )
+    family_member = models.ForeignKey(
+        FamilyMember, on_delete=models.CASCADE, related_name='completions'
+    )
+    completed_at = models.DateTimeField(auto_now_add=True)
+    points_awarded = models.PositiveIntegerField()
+
+    def __str__(self):
+        return (
+            f'{self.family_member} completed {self.chore_instance} '
+            f'(+{self.points_awarded})'
+        )
+
+
+class StreakRecord(models.Model):
+    """A family member's current/best streak for one recurring ChoreDefinition.
+
+    One row per (family_member, chore_definition). Only recurring chores
+    (non-blank `recurrence_rule`) get a record -- see #19's
+    `chores/streaks.py` for where `current_streak`/`best_streak` are
+    updated (on completion and on missed-marking), so #20/#22 should read
+    the current value here rather than recomputing it.
+    """
+
+    family_member = models.ForeignKey(
+        FamilyMember, on_delete=models.CASCADE, related_name='streak_records'
+    )
+    chore_definition = models.ForeignKey(
+        ChoreDefinition, on_delete=models.CASCADE, related_name='streak_records'
+    )
+    current_streak = models.PositiveIntegerField(default=0)
+    best_streak = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['family_member', 'chore_definition'],
+                name='unique_streak_record_per_member_per_definition',
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.family_member} / {self.chore_definition}: '
+            f'{self.current_streak} (best {self.best_streak})'
+        )
+
+
+class Reward(models.Model):
+    """A household reward, unlocked by a points and/or streak threshold.
+
+    At least one of `point_threshold`/`streak_threshold` must be set --
+    enforced in `clean()` since neither field alone can express "at least
+    one of these two".
+    """
+
+    household = models.ForeignKey(
+        Household, on_delete=models.CASCADE, related_name='rewards'
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    point_threshold = models.PositiveIntegerField(null=True, blank=True)
+    streak_threshold = models.PositiveIntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        if self.point_threshold is None and self.streak_threshold is None:
+            raise ValidationError(
+                'A reward needs at least a point_threshold or a '
+                'streak_threshold.'
             )

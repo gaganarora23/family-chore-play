@@ -1,23 +1,21 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>New Reward -- Family Chore Play</title>
-</head>
-<body>
+{% extends "chores/base.html" %}
+
+{% block title %}New Reward -- Family Chore Play{% endblock %}
+
+{% block content %}
   <h1>Create a Reward</h1>
-  {% if form.non_field_errors %}
-    <ul>
-      {% for error in form.non_field_errors %}
-        <li>{{ error }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create Reward</button>
-  </form>
-</body>
-</html>
+  <div class="card">
+    {% if form.non_field_errors %}
+      <ul class="form-errors">
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Create Reward</button>
+    </form>
+  </div>
+{% endblock %}

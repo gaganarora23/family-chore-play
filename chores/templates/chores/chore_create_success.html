@@ -1,13 +1,13 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chore Created -- Family Chore Play</title>
-</head>
-<body>
-  <h1>Chore created</h1>
-  <p><a href="{% url 'chore_create' %}">Create another chore</a></p>
-  <p><a href="{% url 'home' %}">Back to dashboard</a></p>
-</body>
-</html>
+{% extends "chores/base.html" %}
+
+{% block title %}Chore Created -- Family Chore Play{% endblock %}
+
+{% block content %}
+  <div class="card confirmation">
+    <span class="icon">✅</span>
+    <h1>Chore created</h1>
+    <p><a href="{% url 'chore_create' %}">Create another chore</a> &middot;
+       <a href="{% url 'chore_list' %}">View all chores</a> &middot;
+       <a href="{% url 'home' %}">Back to dashboard</a></p>
+  </div>
+{% endblock %}
